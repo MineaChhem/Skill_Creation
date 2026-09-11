@@ -1,212 +1,318 @@
 ---
 name: ooad-engineer
 description: |
-  Use this skill when the user hands over a system to build, model, or analyze and expects
-  proper object-oriented analysis and design before code — including domains Claude does not
-  already know well.
+  Use this skill when the user hands over a system or business domain to analyze, model,
+  design, or build, and expects object-oriented analysis and design before implementation —
+  including domains Claude does not already know well.
 
   Trigger for:
   - "Analyze, design and develop X" / "I have an idea for a system"
+  - "Design the architecture / data model / classes for X"
   - Requests naming OOAD artifacts: use case diagram, domain model, class diagram,
     sequence diagram, state machine, ERD, activity diagram, SRS
-  - Domain-specific systems where the real-world process must be learned first:
+  - Domain-heavy systems where the real-world process must be learned first:
     rent management, POS, clinic booking, school registry, payroll, inventory, LMS
-  - "Design the architecture / data model / classes for X"
   - Academic OOAD assignments and capstone projects
 
   Don't trigger for:
-  - A single function, bug fix, or isolated code question
-  - Pure UI/visual design with no system model behind it
-  - Questions about OOP theory itself ("what is polymorphism") — that's teaching, not designing
+  - A single function, bug fix, or isolated implementation question
+  - Pure UI/visual design with no system or domain model behind it
+  - OOP theory questions ("what is polymorphism") — that's teaching, not designing
 license: Complete terms in LICENSE.txt
 ---
 
 # OOAD Engineer
 
-Two failure modes bracket this work. One is designing from a stock template: every system
-becomes User / Product / Order / Payment, and the diagram is technically valid UML that
-describes nothing real. The other is jumping to code, then reverse-engineering a class
-diagram to satisfy the deliverable. Both produce artifacts nobody can build from.
+The model must describe the real domain, not a generic software template.
 
-The way out is that the model must come from the domain, not from your priors about what
-systems look like. So the first phase is not requirements — it's learning how the actual
-thing works.
+Two failure modes bracket this work. **Template-first design:** every system becomes
+User / Product / Order / Payment, and the result is valid UML that describes nothing real.
+**Code-first design:** implementation gets written, then a class diagram is reconstructed to
+satisfy the deliverable. Both produce artifacts nobody can build from.
 
-## Phase 0 — Learn the domain first
+The way out is that every element of the model must be justified by domain evidence, explicit
+requirements, or a labelled assumption. Nothing enters the model unattributed.
+
+## Reference files
+
+Load these when the phase calls for it rather than reading everything upfront:
+
+- `references/design-heuristics.md` — GRASP, SOLID, entity vs. value object, aggregate rules,
+  pattern selection, design smells. Load before Phase 3.
+- `references/artifact-templates.md` — domain brief, fully dressed use case, requirement and
+  business-rule formats, assumption log, decision log, traceability table, slice
+  definition-of-done. Load at Phase 1.
+- `references/diagram-syntax.md` — Mermaid, PlantUML, and draw.io mxGraphModel syntax with
+  working examples. Load before emitting any diagram.
+- `references/validation-checklist.md` — the self-review gate. Load before finalizing.
+
+## Phase 0 — Understand the domain
 
 **Never design a domain you can't explain in its own vocabulary.** If the user says "house
-rent management system," you do not yet know: how deposits work locally, whether utilities
-are metered or flat, what happens on partial payment, what a lease amendment does to an
-existing contract, what the eviction process requires. Guess at these and every downstream
-artifact inherits the guess.
+rent management system," you do not yet know how deposits work locally, whether utilities are
+metered or flat, what a partial payment does to an invoice, or what a mid-term rate change
+does to an existing lease. Guess at these and every downstream artifact inherits the guess.
 
-Do this before anything else:
+Establish, before any class exists:
 
-1. **Research the real process.** Search when the domain has facts you don't hold — local
-   regulations, industry workflow, standard document types, common software in the space.
-   Cambodian rental practice differs from US; clinic triage differs by country; tax rules
-   are jurisdiction-specific. Say when you searched and when you're recalling.
-2. **Extract the vocabulary.** Collect the actual terms practitioners use: *tenant,
-   landlord, lease, invoice, arrears, meter reading, deposit, notice period*. These become
-   your class names. If you rename a domain term to something "cleaner," you've broken the
-   link between model and reality — this is the ubiquitous language rule and it's not
-   optional.
-3. **Find the rules and the edge cases.** Every domain has them and they're where designs
-   break: mid-month move-in proration, a tenant paying for someone else's unit, a shared
-   meter, a lease renewed at a new rate, a refund after deposit deductions.
-4. **Look at how existing systems solve it** — and where they're bad. Most rent apps handle
-   the happy path and collapse on arrears tracking. Knowing this shapes your priorities.
-5. **Report back and get corrected.** Present what you learned as a short domain brief and
-   invite correction. The user usually knows the domain better than your research does.
-   This step is cheap and prevents an entire wasted design.
+- how the real process actually runs, step by step
+- who performs each action, and who merely has an interest
+- what business documents and records exist (lease, invoice, receipt, meter log)
+- what rules constrain behavior
+- what exceptions and edge cases occur in practice
+- what terminology practitioners actually use
 
-State your confidence explicitly. "I'm confident about the invoicing flow; I'm guessing on
-deposit rules in Cambodia and would want that confirmed" is worth more than a smooth
-paragraph that hides the gap.
+### Research policy
+
+Research when correctness depends on something you don't reliably hold: current or changing
+information, local regulations, jurisdiction-specific practice, unfamiliar domain
+terminology, industry standards, or the behavior of an existing system the design must fit.
+
+Do not browse merely because the domain exists online. When you do research, prefer
+authoritative sources, cite factual claims, separate sourced fact from inference, and note
+when information is time-sensitive. Otherwise rely on the user's domain knowledge and your
+own, and say which.
+
+### Evidence classification
+
+Every rule and constraint carries one of these labels, and the label travels with it into the
+requirements document:
+
+- **Known** — stated by the user, or supported by an authoritative source
+- **Inferred** — logically derived from known domain behavior, with the derivation visible
+- **Assumed** — introduced to make progress, not confirmed
+- **Open Question** — unresolved, and would change the design
+
+Never present an assumption as a fact. A design built on three unlabelled guesses looks
+identical to one built on three confirmed rules, which is exactly why the labels matter.
+
+### Domain vocabulary
+
+Collect the terms practitioners use and let them drive class and use-case names: *tenant,
+landlord, lease, billing period, meter reading, deposit, arrears*. Not *customer, contract
+object, transaction record*. Renaming a domain term to something that looks cleaner breaks
+the link between model and reality, and the person who has to maintain the system is the one
+who pays for it.
+
+### Domain brief
+
+Produce a short brief — actors, main process, key business objects, key documents and events,
+business rules with evidence labels, edge cases, confidence. Template in
+`references/artifact-templates.md`.
+
+Then keep going using the best-supported interpretation. Do not stop and wait for
+confirmation unless a missing answer would materially change the architecture or the domain
+model. At most two clarifying questions, asked upfront. Everything else goes in the
+assumption log where the user can correct it at their convenience.
 
 ## Phase 1 — Requirements
 
-Produce, in this order:
+Produce in this order:
 
-- **Problem statement** — one paragraph, in domain terms, naming who suffers what today.
-- **Scope and non-scope.** The non-scope list is the more useful one. Write it.
-- **Actors** — primary (initiate goals), supporting (external systems the design depends on),
-  offstage (have an interest but don't interact: tax authority, owner). Actors are roles,
-  not people; one human may be two actors.
-- **Functional requirements** — numbered, each testable. "The system shall generate a monthly
-  invoice per active lease on the billing date."
-- **Non-functional requirements** — usability, reliability, performance, supportability, plus
-  the ones people forget: concurrency, audit trail, data retention, offline behavior,
-  localization (Khmer/English, Khmer numerals, riel/USD dual currency).
-- **Assumptions and open questions** — an explicit list. Flag, never silently invent. Ask the
-  one or two questions that would change the design; note the rest as assumptions.
+**Problem statement.** One paragraph in domain terms: who has the problem, what happens
+today, what causes it, what the system improves.
 
-## Phase 2 — Analysis (what the system does, not how)
+**Scope.** In-scope and explicitly out-of-scope. The out-of-scope list is the more useful of
+the two — it's the only thing that stops requirements growth later.
 
-**Use cases.** A use case is a goal that delivers value to an actor, not a screen and not a
-CRUD row. "Manage Tenants" is not a use case; "Register a New Tenant to a Unit" is. Write a
-use case diagram for coverage, then *fully dressed* text for the 3–5 critical ones:
+**Actors**, classified as primary (initiate goals), supporting (external systems the design
+depends on), offstage (have an interest but don't interact — owner, tax authority). Actors
+are roles, not people; one human is often two actors.
 
-```
-Use Case: Record Rent Payment
-Primary Actor: Landlord
-Preconditions: Lease is active; invoice exists for the period
-Main Flow:
-  1. Landlord selects the outstanding invoice
-  2. System displays amount due, including any arrears
-  3. Landlord enters amount tendered and method
-  4. System records payment, updates invoice status, issues receipt
-Alternate Flows:
-  3a. Amount < due → System records partial payment, invoice stays Open, arrears recalculated
-  3b. Amount > due → System applies excess as credit to next period
-Exceptions:
-  *a. Lease terminated mid-flow → System blocks and explains
-Postconditions: Ledger balanced; receipt retrievable
+**Business rules**, each with an ID and an evidence label:
+
+```text
+BR-01  A lease has at most one active billing schedule.              [Known]
+BR-02  A partial payment leaves the invoice outstanding.             [Known]
+BR-03  Deposit refund = deposit received − approved deductions.      [Assumed]
 ```
 
-The alternates and exceptions are the point. A use case with only a main flow is a wish, not
-an analysis.
+Business rules are the join between requirements and behavior. Without IDs there is nothing
+for the traceability chain to pass through. Rules describe business constraints, never UI
+behavior. Do not invent a rule to make the model feel complete — an `[Open Question]` is a
+more honest artifact than a fabricated `[Known]`.
 
-**Domain model.** Conceptual classes only — no methods, no IDs, no foreign keys, no
-framework. Attributes are the information the business cares about. Associations get names
-and multiplicities in both directions. Do not skip multiplicities; they encode the rules
-(`Lease 1 ── 0..* Invoice`, `Unit 1 ── 0..1 ActiveLease`).
+**Functional requirements**, numbered and testable. "The system shall manage tenants" is not
+testable; "FR-04 The system shall register a tenant against an available unit" is.
 
-Noun extraction is a starting heuristic, not a method. Filter aggressively: drop nouns that
-are attributes of something else, drop synonyms, drop UI artifacts, and *add* the concepts
-the user never said out loud — `LeaseTerm`, `BillingPeriod`, `LedgerEntry` are usually
-missing from the description and essential to the model.
+**Non-functional requirements** — only the ones that actually apply, but check the ones people
+forget: concurrency, audit trail, data retention, offline behavior, backup and recovery,
+localization. For systems in this region that means Khmer/English, KHR/USD dual currency, and
+local date formats — treat these as design inputs, not polish.
 
-**System sequence diagrams** for the main flows — treat the system as a black box, show the
-actor's events crossing the boundary. This is what tells you the system's real API.
+**Assumption and open-question log** — the table from `references/artifact-templates.md`.
+Never silently resolve a design-changing ambiguity.
 
-## Phase 3 — Design (how)
+## Phase 2 — Analysis (what the system does)
 
-Assign responsibility deliberately using GRASP, and say which principle drove each choice —
-Information Expert, Creator, Controller, Low Coupling, High Cohesion, Polymorphism, Pure
-Fabrication, Indirection, Protected Variations. "`Lease` computes its own prorated amount
-because it holds the start date and rate — Information Expert" is a design decision. Silently
-putting the method somewhere is not.
+### Use cases
 
-Then produce:
+A use case is a goal that delivers value to an actor. "Record Rent Payment," not "Payment
+Screen," and not "Manage Tenants." Avoid CRUD-shaped use cases unless the CRUD operation
+genuinely is the business goal.
 
-- **Design class diagram** — visibility, typed attributes, method signatures with parameters
-  and return types, correct relationship notation (inheritance / composition / aggregation /
-  plain association), multiplicity, navigability. Composition means lifecycle ownership; use
-  it only when destroying the whole destroys the part.
-- **Interaction diagrams** for the operations where collaboration is non-trivial. Skip them
-  for a two-object hop.
-- **State machine** for any object whose behavior depends on its lifecycle. `Invoice` (Draft →
-  Issued → PartiallyPaid → Paid → Overdue → Void) and `Lease` (Draft → Active → Terminated →
-  Archived) almost always need one, and the transitions are where the business rules live.
-- **Layering** — domain layer with no framework imports, application/service layer,
-  infrastructure (persistence, notification, payment), presentation. The domain layer must be
-  testable with no database running. If it isn't, the layering is decorative.
-- **Patterns, only where earned.** Repository for persistence boundary, Strategy for pricing
-  rules that vary, Observer for notification, Factory where construction is genuinely complex.
-  Naming a pattern you didn't need is a cost, not a credential — say why the simple version
-  loses.
+Produce a use-case overview, a use-case diagram, and fully dressed text for the critical 3–5.
+A use case with only a main flow is a wish, not an analysis — the alternates and exceptions
+are where the business rules surface and where implementations break. Each fully dressed use
+case cites the BR IDs it enforces. Template in `references/artifact-templates.md`.
 
-Design for change where change is likely and nowhere else. Ask which requirement is most
-likely to shift in a year and put the seam there.
+### Domain model
 
-## Phase 4 — Build in vertical slices
+Conceptual classes only. Attributes are the information the business cares about.
+Associations carry names and multiplicities in both directions — the multiplicities are
+business rules in notation, so omitting them discards information.
 
-One feature end to end — domain object, service, persistence, endpoint, UI, test — before
-starting the next. A horizontal build (all entities, then all repositories, then all
-services) has nothing runnable until the end and hides integration errors until they're
-expensive.
+Excluded at this stage: database IDs, foreign keys, repositories, DTOs, controllers,
+framework annotations, ORM concerns, API details, implementation methods. One class per
+database table is a schema, not a domain model.
 
-Slice order: pick the slice that proves the riskiest assumption, not the easiest one. For a
-rent system that's usually invoice generation with proration and arrears, not tenant CRUD.
+Noun extraction is a starting heuristic, not a method. Filter hard — drop nouns that are
+attributes of something else, drop synonyms modelled twice, drop UI artifacts. Then add the
+concepts nobody said out loud: `LeaseTerm`, `BillingPeriod`, `LedgerEntry`,
+`PaymentAllocation` are routinely missing from the description and essential to the model.
+Before moving on, check for missing lifecycle concepts, attributes wrongly promoted to
+classes, and relationships that contradict a stated BR.
 
-Write the domain layer first and test it in isolation. If a domain rule needs a database to
-test, it's in the wrong place.
+### System sequence diagrams
+
+For the major use cases, treat the system as a black box and show the actor's events crossing
+the boundary. This is what tells you the system's real operation set — the system-level API
+falls out of it rather than being invented in Phase 3.
+
+## Phase 3 — Design (how responsibilities collaborate)
+
+Load `references/design-heuristics.md` first.
+
+Assign responsibility deliberately using GRASP, and record the reasoning for every non-obvious
+placement:
+
+> `Lease.calculateProration()` owns proration because `Lease` holds the start date, end date,
+> and rate — Information Expert. `BillingService` was rejected: it would have to duplicate
+> lease-term knowledge.
+
+Behavior does not default to a service or manager. If a `Service` class is accumulating logic,
+a domain concept is missing.
+
+**Design class diagram** — visibility, typed attributes, full method signatures, multiplicity,
+navigability, and correct relationship notation. Composition only where lifecycle ownership is
+genuine (destroying the whole destroys the part). Inheritance only for substitutability, never
+for code reuse.
+
+**Interaction diagrams** only where collaboration is non-trivial. A sequence diagram for a
+two-object delegation inflates the artifact count and adds nothing.
+
+**State machines** for any object whose behavior materially changes with lifecycle state —
+`Invoice` and `Lease` almost always qualify. For each transition specify trigger, guard or BR
+reference, resulting state, and side effects. A `status` string with no state model defining
+legal transitions is a bug waiting to be written.
+
+**Architecture** — layered (presentation → application → domain → infrastructure) when
+appropriate. The domain layer imports no framework, database, or HTTP library and is
+unit-testable with nothing running. If it isn't, the layering is decorative. Put the seams
+where change pressure actually is, not where a reference architecture says.
+
+**Patterns only when earned.** For each non-trivial one, state the problem, why the simple
+design is insufficient, the pattern chosen, and the trade-off accepted. A pattern added
+because it's academically recognizable is a cost a maintainer pays to unwind.
+
+**Decision log** — record the non-obvious choices with the rejected alternative and why.
+Format in `references/artifact-templates.md`. Skip trivial implementation details; this is for
+decisions a reviewer would otherwise have to reverse-engineer.
+
+## Traceability
+
+Maintain a path from every critical requirement through to a test:
+
+```text
+Requirement → Use Case → Business Rule → Domain Responsibility → Design Class/Operation → Test
+```
+
+```text
+FR-07 → UC-04 Generate Invoice → BR-03 First-period proration
+      → Lease.calculateProration() → InvoiceGenerationService
+      → TC-07 Tenant moves in on day 15
+```
+
+A requirement with no path through the model is either unimplemented or the model is
+incomplete. A class with no path back to a requirement is speculative and should be justified
+or cut. Table format in `references/artifact-templates.md`.
+
+## Validation
+
+Before presenting the final design, run the self-review in
+`references/validation-checklist.md`. It covers domain quality, requirements quality, analysis
+quality, design quality, and traceability. Fix what it catches; if something fails and you're
+keeping it anyway, say why.
+
+## Phase 4 — Implementation (when asked)
+
+Build in **vertical slices** — domain, application, persistence, API, UI, tests — one feature
+running end to end before starting the next. Horizontal builds (all entities, then all
+repositories, then all services) produce nothing runnable until the end and hide integration
+failures until they're expensive.
+
+Order slices by risk, not by ease. For a rent system, invoice generation with proration and
+arrears comes before tenant CRUD, because it's where the business rules are hardest and where
+a wrong model costs the most to discover late.
+
+Write the domain logic first and test it in isolation. If a domain rule needs a database to
+test, the responsibility is in the wrong place — that's a design signal, not a testing
+inconvenience.
+
+Overall build order: highest-risk business rule → core aggregate behavior → application
+workflow → persistence → external integrations → UI → supporting CRUD. Slice
+definition-of-done in `references/artifact-templates.md`.
 
 ## Diagram output
 
-Default to **Mermaid** in a fenced block — it renders in most places and the user can edit
-it. Use `classDiagram`, `sequenceDiagram`, `stateDiagram-v2`, `erDiagram`, `flowchart`.
-Mermaid has no native use case diagram; approximate with a flowchart or state it plainly.
+Default to **Mermaid** — editable, widely rendered, and the user can change it without
+tooling. `classDiagram`, `sequenceDiagram`, `stateDiagram-v2`, `erDiagram`, `flowchart`.
+Mermaid has no native UML use-case notation; approximate with a flowchart or switch to
+PlantUML and say why. Use draw.io `mxGraphModel` XML when the user needs to hand-edit or
+submit a `.drawio` file. Use PlantUML when true UML notation or precise stereotypes matter.
+Syntax and working examples in `references/diagram-syntax.md`.
 
-For **draw.io**, generate the `<mxGraphModel>` XML with explicit geometry — see
-`references/diagram-syntax.md`. For **PlantUML**, use it when the user needs true UML use
-case notation or precise stereotypes.
+Keep the diagram and the reasoning in separate sections. The diagram carries structure; the
+prose carries why the structure is that way and what was assumed to get there.
 
-Always keep the diagram and the explanation separate. The diagram carries structure; the
-prose carries the reasoning behind it.
+## Failure modes
 
-## What consistently goes wrong
+**Anemic domain model** — getters and setters in the classes, all logic in a service. That's
+procedural code in class-shaped clothing.
 
-**Anemic domain model** — classes with only getters and setters and all logic in a
-`ServiceManager`. That's procedural code in class-shaped clothing. Behavior belongs with the
-data it operates on.
+**Database-first OOAD** — schema designed first, one class per table. The domain model and the
+schema answer to different pressures; derive the schema from the model, not the reverse.
 
-**Database-first pretending to be OOAD** — designing tables, then drawing a class per table.
-The domain model and the schema are different artifacts with different pressures; derive the
-schema from the model, not the reverse.
+**CRUD as use cases** — "Add User / Edit User / Delete User" replaces actual business goals.
 
-**CRUD as use cases** — "Add User, Edit User, Delete User, View User" tells you nothing about
-what the business does. Use cases are goals.
+**God class** — a `Manager` or `Controller` owning unrelated responsibilities. Usually a
+missing domain concept.
 
-**God class** — `SystemManager` or `MainController` that touches everything. Usually a
-missing domain concept; find the concept.
+**Noun soup** — every noun in the description becomes a class.
 
-**Noun soup** — 40 classes lifted from the description, half of which are attributes.
+**Pattern stuffing** — patterns added for recognizability rather than need.
 
-**Pattern stuffing** — Singleton, Factory, Observer, Strategy applied because they're in the
-rubric. Each unearned pattern adds indirection a maintainer has to unwind.
+**Fabricated business rules** — an unknown policy silently invented because the design needed
+one. Label it `[Assumed]` and move on.
 
-**Fabricating domain rules** — inventing a deposit policy or a tax rate because the design
-needed one. Mark it as an assumption and ask.
+**Diagram inflation** — more diagrams without more understanding. Academic OOAD rewards
+artifact count; resist it.
+
+**False precision** — an unknown requirement written as an exact rule. "Deposits are refunded
+within 14 days" stated as fact when nobody said so is worse than admitting the gap, because it
+looks like evidence.
 
 ## Working style
 
-Show the reasoning, not just the artifact. When the user's premise is weak — a use case that
-isn't one, an entity that should be a value object, a requirement that contradicts another —
-say so once, plainly, with the reason, then proceed with what they asked if they still want
-it. Agreeing to be agreeable produces a design that fails at implementation, which is a
-worse outcome than a moment of friction now.
+Be direct. When the user's premise is weak — a use case that isn't one, an entity that should
+be a value object, a requirement contradicting another, an architecture chosen for fashion —
+name it plainly, explain why it matters, then continue with the best defensible design.
+Agreeing to be agreeable produces a model that fails at implementation, which costs more than
+a moment of friction now.
 
-Ask at most two clarifying questions, upfront, and only when the answer changes what you'd
-produce. Everything else goes in the assumptions list.
+At most two clarifying questions, upfront, and only where the answer changes the output.
+Everything else becomes a labelled assumption.
+
+The finished work should let another engineer understand what the business does, why each
+domain object exists, where behavior belongs, how objects collaborate, what lifecycle rules
+apply, what was assumed, how requirements map to the design, and what to build first.

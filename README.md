@@ -7,7 +7,7 @@ self-contained folder under [`skills/`](skills/).
 
 | Skill | What it does |
 |---|---|
-| [`ooad-engineer`](skills/ooad-engineer/) | Domain-first object-oriented analysis and design: learn the real-world process, then produce requirements, use cases, domain model, design, and vertical-slice build order |
+| [`ooad-engineer`](skills/ooad-engineer/) | Evidence-based object-oriented analysis and design: understand the real-world process, then produce requirements, use cases, domain model, design, traceability, and a vertical-slice build order |
 
 ## Install
 
@@ -44,26 +44,40 @@ and upload it in the Skills section of Claude's settings.
 
 ## ooad-engineer
 
-Makes Claude do proper object-oriented analysis and design before writing code. It works
-even for domains Claude doesn't know well, because it learns how the real process works
-before modeling it.
+Makes Claude do proper object-oriented analysis and design before writing code. It works even
+for domains Claude doesn't know well, because it learns how the real process works before
+modeling it.
 
 Most AI-generated system designs fail in one of two ways. Either every system turns into the
 same `User / Product / Order / Payment` template, or the code gets written first and a class
-diagram is reverse-engineered afterwards. This skill blocks both. The model has to come from
-the domain.
+diagram is reverse-engineered afterwards. This skill blocks both. Every element of the model
+has to be justified by domain evidence, an explicit requirement, or a labelled assumption.
 
 | Phase | Output |
 |---|---|
-| **0. Learn the domain** | Research the real-world process, extract the practitioners' vocabulary, find the rules and edge cases, then report back a short domain brief for correction |
-| **1. Requirements** | Problem statement, scope and non-scope, actors, numbered testable functional requirements, non-functional requirements, assumptions and open questions |
-| **2. Analysis** | Use case diagram plus fully dressed use cases (with alternate flows and exceptions), a conceptual domain model with multiplicities, system sequence diagrams |
-| **3. Design** | GRASP-justified responsibility assignment, design class diagram, interaction diagrams, state machines, layering, patterns only where they're needed |
-| **4. Build** | Vertical slices, one feature end to end, starting with the riskiest assumption |
+| **0. Understand the domain** | Learn the real process, extract practitioners' vocabulary, find rules and edge cases, then a short domain brief with every rule labelled Known / Inferred / Assumed / Open Question |
+| **1. Requirements** | Problem statement, scope and out-of-scope, classified actors, numbered business rules with IDs, testable functional requirements, non-functional requirements, assumption and open-question log |
+| **2. Analysis** | Use case diagram plus fully dressed use cases (extensions, exceptions, BR citations), conceptual domain model with multiplicities, system sequence diagrams |
+| **3. Design** | GRASP-justified responsibility assignment, design class diagram, interaction diagrams, state machines, layering, patterns only where earned, decision log |
+| **Traceability** | `FR → use case → business rule → responsibility → class/operation → test`, checked in both directions |
+| **Validation** | Self-review gate across domain, requirements, analysis, design, and traceability before anything is presented as final |
+| **4. Implementation** | Vertical slices, one feature end to end, ordered by risk rather than ease |
+
+Evidence labels are the part that matters most in practice. A design built on three unlabelled
+guesses looks identical to one built on three confirmed rules — the labels are what tell the
+reader which one they're holding.
 
 Diagrams default to **Mermaid**. **PlantUML** is used for true UML use case notation and
-**draw.io XML** for diagrams you'll rearrange by hand. See
-[`references/diagram-syntax.md`](skills/ooad-engineer/references/diagram-syntax.md).
+**draw.io XML** for diagrams you'll rearrange by hand.
+
+Reference files, loaded per phase rather than all at once:
+
+| File | Loaded |
+|---|---|
+| [`references/artifact-templates.md`](skills/ooad-engineer/references/artifact-templates.md) | Phase 1 — domain brief, fully dressed use case, requirement and rule formats, assumption log, decision log, traceability table, slice definition-of-done |
+| [`references/design-heuristics.md`](skills/ooad-engineer/references/design-heuristics.md) | Phase 3 — GRASP, SOLID, entity vs. value object, aggregate rules, pattern selection, design smells |
+| [`references/diagram-syntax.md`](skills/ooad-engineer/references/diagram-syntax.md) | Any diagram — Mermaid, PlantUML, draw.io mxGraphModel |
+| [`references/validation-checklist.md`](skills/ooad-engineer/references/validation-checklist.md) | Before finalizing |
 
 It triggers on requests like:
 
@@ -104,7 +118,10 @@ claude-skills/
         ├── SKILL.md
         ├── LICENSE.txt
         └── references/
-            └── diagram-syntax.md
+            ├── artifact-templates.md
+            ├── design-heuristics.md
+            ├── diagram-syntax.md
+            └── validation-checklist.md
 ```
 
 ## License
