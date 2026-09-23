@@ -7,7 +7,7 @@ self-contained folder under [`skills/`](skills/).
 
 | Skill | What it does |
 |---|---|
-| [`ooad-engineer`](skills/ooad-engineer/) | Evidence-based object-oriented analysis and design: understand the real-world process, then produce requirements, use cases, domain model, design, traceability, and a vertical-slice build order |
+| [`ooad-engineer`](skills/ooad-engineer/) | Evidence-based object-oriented analysis and design: understand the real-world process, then produce requirements, use cases, domain model, design, traceability, and a vertical-slice build order — scaled to what was actually asked for |
 
 ## Install
 
@@ -53,6 +53,18 @@ same `User / Product / Order / Payment` template, or the code gets written first
 diagram is reverse-engineered afterwards. This skill blocks both. Every element of the model
 has to be justified by domain evidence, an explicit requirement, or a labelled assumption.
 
+Two things are decided before any phase runs.
+
+**Entry point** — greenfield, a feature added to an existing system, an existing codebase to
+redesign, or a single named artifact. Each starts somewhere different. A pasted class gets
+diagnosed before anything is proposed; a feature request gets the delta, not a remodelled
+system.
+
+**Depth** — Quick, Standard, or Full. "Draw me a class diagram" gets a class diagram and the
+rules its multiplicities encode, not a software requirements specification. Full depth is
+staged across turns: domain brief and requirements land first and get corrected before the
+design is built on them.
+
 | Phase | Output |
 |---|---|
 | **0. Understand the domain** | Learn the real process, extract practitioners' vocabulary, find rules and edge cases, then a short domain brief with every rule labelled Known / Inferred / Assumed / Open Question |
@@ -63,9 +75,17 @@ has to be justified by domain evidence, an explicit requirement, or a labelled a
 | **Validation** | Self-review gate across domain, requirements, analysis, design, and traceability before anything is presented as final |
 | **4. Implementation** | Vertical slices, one feature end to end, ordered by risk rather than ease |
 
+Anything with more than one role also gets a role × action permission matrix and a data
+classification pass in Phase 1 — sensitive data turns the audit trail into a functional
+requirement with a domain object behind it, rather than a non-functional aspiration. Money is
+a value object carrying its currency; multi-currency systems store the exchange rate used at
+transaction time, which is what makes reconciliation possible later.
+
 Evidence labels are the part that matters most in practice. A design built on three unlabelled
 guesses looks identical to one built on three confirmed rules — the labels are what tell the
-reader which one they're holding.
+reader which one they're holding. Inferred and assumed rules carry an H/M/L confidence grade so
+the shakiest load-bearing assumption is the one raised first, and a regulatory number is never
+graded `[Known]` without a citation.
 
 Diagrams default to **Mermaid**. **PlantUML** is used for true UML use case notation and
 **draw.io XML** for diagrams you'll rearrange by hand.
@@ -84,8 +104,13 @@ It triggers on requests like:
 - "Analyze, design and develop a house rent management system"
 - "Draw the use case and class diagrams for a clinic booking system"
 - "I have an idea for a POS for small coffee shops in Phnom Penh"
+- "Our order module is all in OrderService — can you redesign the domain model?"
 
-It won't trigger for single functions, bug fixes, pure UI work, or OOP theory questions.
+It won't trigger for single functions, bug fixes, layout and UX work with no domain-model
+question behind it, or OOP theory questions.
+
+A six-case eval suite covering both the positive and the negative triggers lives in
+[`evals/evals.json`](skills/ooad-engineer/evals/evals.json).
 
 ---
 
@@ -117,6 +142,8 @@ claude-skills/
     └── ooad-engineer/
         ├── SKILL.md
         ├── LICENSE.txt
+        ├── evals/
+        │   └── evals.json
         └── references/
             ├── artifact-templates.md
             ├── design-heuristics.md

@@ -37,7 +37,7 @@ Lease agreement (signed, physical) · Monthly invoice · Receipt · Move-out ins
 |---|---|---|
 | BR-01 | A unit has at most one active lease at a time | [Known] |
 | BR-02 | A partial payment leaves the invoice outstanding | [Known] |
-| BR-03 | Deposit refund = deposit − approved deductions | [Assumed] |
+| BR-03 | Deposit refund = deposit − approved deductions | [Assumed·M] |
 
 ## Edge cases seen in practice
 - Mid-month move-in → first invoice prorated
@@ -57,8 +57,16 @@ Would change the design: whether utilities are billed per-meter or flat.
 
 ```text
 BR-<nn>  <Statement of the constraint, in domain terms, one sentence.>   [Evidence]
-         Source: <user statement / source / derivation>
+         Source: <user statement / cited source / the derivation, spelled out>
 ```
+
+Evidence is one of `[Known]`, `[Inferred·H/M/L]`, `[Assumed·H/M/L]`, `[Open Question]`. The
+confidence grade decides what gets verified first — a low-confidence assumption the billing
+logic depends on is what you raise at the checkpoint.
+
+Never grade a specific regulatory number as `[Known]` without a citation. Retention periods,
+tax rates, statutory notice periods and licence thresholds are jurisdiction-specific and they
+change; write `[Open Question]` and say what would resolve it.
 
 Rules constrain the business, not the interface. "The deposit cannot exceed two months' rent"
 is a rule; "the deposit field is disabled until a lease is selected" is UI behavior.
@@ -76,6 +84,94 @@ FR-<nn>  The system shall <action> <object> [<condition>].
 
 Testable or it isn't a requirement. "Manage tenants" fails; "register a tenant against an
 available unit" passes.
+
+---
+
+## Permission matrix
+
+Roles across, actions down. Fill every cell — a blank is an undecided access rule, and
+undecided access rules become production incidents. Use a qualifier where access is
+conditional rather than a bare tick.
+
+```markdown
+| Action | Receptionist | Doctor | Cashier | Clinic admin |
+|---|---|---|---|---|
+| Book / reschedule appointment | Yes | Own slots | No | Yes |
+| View patient contact details | Yes | Own patients | Name only | Yes |
+| View or write clinical note | No | Own patients | No | No |
+| Order lab test | No | Own patients | No | No |
+| View lab result | No | Own patients | No | No |
+| Record payment | No | No | Yes | Yes |
+| Issue refund | No | No | Needs approval | Yes |
+| Change price list | No | No | No | Yes |
+| Export patient data | No | No | No | Yes, audited |
+```
+
+"Own patients" and "needs approval" are business rules — give them BR IDs and reference them
+from the use cases that enforce them.
+
+---
+
+## Data classification
+
+One row per kind of data the system stores. Retention is an `[Open Question]` unless the user
+or a cited source gave you the period — never fill it in from memory.
+
+```markdown
+| Data | Class | Who may read | Retention | Audited |
+|---|---|---|---|---|
+| Patient name, phone | Personal | Reception, treating doctor, admin | [Open Question] | Writes |
+| Clinical note, diagnosis | Sensitive (health) | Treating doctor only | [Open Question] | Reads and writes |
+| Lab result | Sensitive (health) | Treating doctor, ordering doctor | [Open Question] | Reads and writes |
+| Invoice, payment record | Personal + financial | Cashier, admin | [Open Question] — tax law | Writes |
+| Price list | Public | Everyone | n/a | No |
+```
+
+When a row is Sensitive, the audit trail stops being a non-functional aspiration and becomes a
+functional requirement with a domain object behind it:
+
+```text
+FR-21  The system shall record an immutable audit entry for every read of a clinical note,
+       capturing actor, patient, timestamp, and access reason.
+       Enforces: BR-14
+       Acceptance: A doctor opening a note produces exactly one audit entry; the entry
+       cannot be edited or deleted through any application path.
+```
+
+Model it as an append-only `AuditEntry`, not a mutable log table — "immutable" is a design
+constraint the model has to express, not a convention to hope for.
+
+---
+
+## Existing-model assessment
+
+Produce this before proposing anything, when the user hands you code.
+
+```markdown
+## What you have now
+
+**Structure:** `Order` holds `id, status: string, total: number, items: any[]` with accessors
+only. `OrderService` holds `placeOrder, cancelOrder, applyDiscount, markShipped,
+calculateTotal`.
+
+**Diagnosis:**
+| Smell | Where | Concrete consequence |
+|---|---|---|
+| Anemic domain model | `Order` / `OrderService` | Order invariants live nowhere; any caller can set any field to anything |
+| Primitive obsession | `status: string`, `total: number` | `cancel()` runs on a shipped order; totals lose currency and drift on rounding |
+| Untyped collection | `items: any[]` | No line-level invariant; quantity and price are unchecked |
+
+**Implied business rules** (recovered from the code, to be confirmed):
+| ID | Rule | Evidence |
+|---|---|---|
+| BR-01 | An order can be cancelled only before shipping | [Inferred·M] — implied by method set, not enforced anywhere |
+
+## What I propose
+<the redesign, each move citing its GRASP principle>
+
+## Refactor order
+1. ... (what lands first, what it unblocks, what keeps working)
+```
 
 ---
 
@@ -127,8 +223,8 @@ available unit" passes.
 ```markdown
 | ID | Statement | Type | Impact if wrong | Resolves by |
 |---|---|---|---|---|
-| A-01 | Deposit is refunded within 14 days of move-out | Assumed | Low — a config value | Ask landlord |
-| A-02 | Utilities are metered per unit, not shared | Assumed | **High — changes the domain model** | Ask user; inspect a bill |
+| A-01 | Deposit is refunded within 14 days of move-out | Assumed·L | Low — a config value | Ask landlord; no source for the period |
+| A-02 | Utilities are metered per unit, not shared | Assumed·M | **High — changes the domain model** | Ask user; inspect a bill |
 | Q-01 | Can one tenant hold two concurrent leases? | Open | **High — changes Lease multiplicity** | Ask user |
 ```
 

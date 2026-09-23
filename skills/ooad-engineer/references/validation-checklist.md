@@ -8,6 +8,18 @@ and give the reason.
 
 ---
 
+## Depth and entry fit
+
+- [ ] The entry point was identified: greenfield, feature addition, existing codebase, or a
+      single named artifact
+- [ ] Output depth matches the ask — no SRS in answer to "draw me a class diagram"
+- [ ] Full depth was staged, not dumped: Phase 0–1 delivered and checkpointed before the
+      design
+- [ ] Feature addition reuses the existing class names and designs only the delta
+- [ ] Existing-codebase work diagnosed the current model, named the smells, and stated the
+      concrete consequences before proposing a replacement
+- [ ] Any escalation beyond the requested depth is stated with a reason, not done silently
+
 ## Domain quality
 
 - [ ] Class and use-case names use practitioners' vocabulary, not generic software nouns
@@ -15,7 +27,10 @@ and give the reason.
 - [ ] The main real-world process is represented end to end, not just the happy path
 - [ ] Every business document and record in the domain maps to something in the model
 - [ ] Edge cases from the domain brief are handled somewhere, not silently dropped
-- [ ] Every business rule carries an evidence label; no `[Assumed]` is presented as fact
+- [ ] Every business rule carries an evidence label, with H/M/L on inferred and assumed rules
+- [ ] No `[Assumed]` is presented as fact
+- [ ] No regulatory number — retention period, tax rate, statutory notice, licence threshold —
+      is stated as `[Known]` without a citation
 - [ ] Nothing was researched-and-stated without a source, and nothing time-sensitive is
       asserted from memory
 
@@ -29,6 +44,12 @@ and give the reason.
 - [ ] Non-functional requirements are the ones that actually apply — concurrency, audit trail,
       retention, offline, localization, currency were considered
 - [ ] High-impact open questions are flagged, not resolved by quiet assumption
+- [ ] A role × action permission matrix exists when the system has more than one role, with
+      every cell filled and conditional access qualified
+- [ ] Every kind of stored data is classified; sensitive data has an audit requirement written
+      as an FR with a BR behind it, and an immutable audit concept in the model
+- [ ] Monetary amounts carry a currency; multi-currency transactions store the exchange rate
+      used at transaction time, and the rounding rule is stated per currency
 
 ## Analysis quality
 
@@ -41,6 +62,9 @@ and give the reason.
 - [ ] Concepts that were implicit in the description were added (billing period, ledger entry,
       allocation, term)
 - [ ] No class is really an attribute of another class
+- [ ] Type and instance are separated where the business tracks copies individually
+      (`Book`/`Copy`, `Product`/`SerialItem`, `CourseDefinition`/`CourseOffering`), or the
+      collapse is stated as a deliberate decision
 - [ ] Synonyms are not modelled twice
 - [ ] System sequence diagrams exist for the major use cases and the system operations fall
       out of them
@@ -64,6 +88,7 @@ and give the reason.
 
 ## Traceability
 
+- [ ] Full depth only — at Quick and Standard, BR IDs cited inline are enough
 - [ ] Every critical FR has a complete path: FR → use case → BR → responsibility → class /
       operation → test
 - [ ] Every design class traces back to at least one requirement

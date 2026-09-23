@@ -1,0 +1,80 @@
+{
+  "skill_name": "ooad-engineer",
+  "evals": [
+    {
+      "id": 1,
+      "name": "full-greenfield-clinic",
+      "prompt": "I want to build a booking and billing system for a small private clinic in Phnom Penh. Patients book with a doctor, the clinic charges consultation plus any lab tests, and patients pay in USD or riel. Analyze, design and develop it.",
+      "expected_output": "Full mode. First turn delivers domain brief, BRs with evidence labels, scope, permissions and sensitive-data classification, open questions — then stops for correction before the full design.",
+      "assertions": [
+        "Treats this as Full depth and delivers Phase 0-1 first rather than the entire design in one message",
+        "Every business rule has a BR-## ID and an evidence label; inferred/assumed rules carry H/M/L",
+        "No specific regulatory number or retention period is stated as [Known] without a source",
+        "Health data is classified and an audit requirement is stated",
+        "Includes a role x action permission matrix",
+        "Money handling addresses both KHR and USD and the stored exchange rate"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "quick-class-diagram",
+      "prompt": "Draw me a class diagram for a library book lending system.",
+      "expected_output": "Quick mode. A Mermaid class diagram grounded by a short list of the rules behind its multiplicities. No SRS, no use-case catalog, no traceability matrix.",
+      "assertions": [
+        "Output is dominated by the class diagram, not requirements documentation",
+        "Multiplicities are present and a short list of the rules they encode is given",
+        "Distinguishes Book (title) from Copy/Item (physical copy) or explicitly notes the choice",
+        "Does not produce a full requirements document or traceability matrix"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "existing-codebase-anemic",
+      "prompt": "Here's our order module. Everything is in OrderService and the Order class just has getters and setters. Can you redesign the domain model? [paste: class Order { id; status: string; total: number; items: any[]; getters/setters } class OrderService { placeOrder(); cancelOrder(); applyDiscount(); markShipped(); calculateTotal(); }]",
+      "expected_output": "Existing-codebase entry. Reports the current model first (anemic, status string, float money), then proposes moving behavior into Order with a state machine and Money value object, citing GRASP.",
+      "assertions": [
+        "Describes the existing model and its problems before proposing a new one",
+        "Identifies the anemic domain model by name",
+        "Replaces the status string with a state machine with defined transitions",
+        "Replaces number total with a Money value object",
+        "Justifies moving calculateTotal into Order with Information Expert"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "rent-feature-addition",
+      "prompt": "Our rent system already has Tenant, Unit, Lease, Invoice. Add support for metered electricity and water billing per unit.",
+      "expected_output": "Feature-addition entry, Standard depth. Designs the delta: MeterReading, tariff, how utility line items join the invoice, edge cases like meter reset and missing readings.",
+      "assertions": [
+        "Designs only the delta and reuses the existing classes rather than remodelling the system",
+        "Introduces a MeterReading concept and a tariff/rate concept",
+        "Covers at least two edge cases: missing reading, meter replacement/rollover, move-out mid-period",
+        "New rules have BR IDs with evidence labels"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "negative-ux-only",
+      "prompt": "The checkout page on my shop feels cluttered. Can you redesign the layout so it's cleaner?",
+      "expected_output": "Should NOT trigger ooad-engineer; this is a UX/UI task for ux-ui-design.",
+      "assertions": [
+        "ooad-engineer is not used; response is UX-focused"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "negative-oop-theory",
+      "prompt": "What's the difference between aggregation and composition in UML?",
+      "expected_output": "Should NOT trigger ooad-engineer; it's a concept question.",
+      "assertions": [
+        "ooad-engineer is not used; response is a direct explanation"
+      ],
+      "files": []
+    }
+  ]
+}

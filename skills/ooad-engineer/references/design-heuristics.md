@@ -71,6 +71,64 @@ modelled as two loose fields — `DateRange` can enforce `start ≤ end` once, i
 
 ---
 
+## Type vs. instance
+
+When the domain has both an abstract description and the physical or scheduled things that
+realize it, those are two classes. Collapsing them is one of the most common modeling errors,
+and it shows up immediately: the attributes that belong to one copy have nowhere to live.
+
+| Abstract type | Realized instance | Only the instance has |
+|---|---|---|
+| `Book` (title, author, ISBN) | `Copy` (barcode, shelf, condition) | Loan status, acquisition date, damage |
+| `Product` | `SerialItem` / `StockItem` | Serial number, warehouse bin, expiry |
+| `CourseDefinition` | `CourseOffering` | Term, instructor, enrolled students, room |
+| `Route` | `Trip` | Departure time, vehicle, passengers |
+| `MenuItem` | `PreparedDish` | Ticket, cook time, table |
+| `ServiceType` (consultation) | `Appointment` | Doctor, slot, patient, outcome |
+
+The test: **can two of them exist at once, and does the business track them separately?** A
+library with three copies of the same title lends one specific copy, and the loan attaches to
+that copy, not to the title. If the answer is yes, split.
+
+It is legitimate to collapse them for a genuinely single-instance domain — say so explicitly
+and record it as a decision, rather than leaving the reader to wonder whether you noticed.
+
+---
+
+## Refactoring an anemic model
+
+The recurring rescue job. Symptoms: entities are field bags with accessors, a `*Service` holds
+every operation, state is a free string, money is a number.
+
+Work it in this order — each step is independently shippable:
+
+1. **Name the current state.** "Anemic domain model: `Order` has no behavior; `OrderService`
+   holds `placeOrder`, `cancelOrder`, `applyDiscount`, `markShipped`, `calculateTotal`."
+   Naming it is not pedantry — it tells the reader the problem is known and bounded.
+2. **Replace primitives with value objects first.** `total: number` becomes `Money`;
+   `items: any[]` becomes `OrderLine[]`. This is low-risk, mechanical, and it makes the next
+   steps possible because the types now carry meaning.
+3. **Model the state machine.** A free-string `status` permits every illegal transition by
+   construction: nothing stops `cancel()` on a shipped order, or a second `markShipped()`.
+   Define the states and the legal transitions, and make the object reject the rest.
+4. **Move behavior to the data.** `calculateTotal()` reads only the order's own lines →
+   Information Expert puts it on `Order`. `applyDiscount()` mutates order state → `Order`.
+   Each move cites its principle.
+5. **Leave the service as an orchestrator.** What remains is genuinely application-layer:
+   loading the aggregate, calling one domain method, persisting, publishing an event. If the
+   service still holds a calculation after this, a domain concept is still missing.
+
+What the service keeps vs. what the entity takes:
+
+| Belongs on the entity | Belongs in the application service |
+|---|---|
+| Invariants and state transitions | Transaction boundary |
+| Calculations over its own data | Loading and saving aggregates |
+| Rejecting illegal operations | Calling external systems |
+| Producing domain events | Mapping to and from DTOs |
+
+---
+
 ## Aggregates
 
 An aggregate is a cluster of objects treated as one unit for changes and invariants.
